@@ -1,5 +1,5 @@
 //
-//  main.c
+//  explicitSolution.c
 //  HeatEquation
 //
 //  Created by Mallory Lai on 10/7/16.
@@ -12,18 +12,26 @@
 int main(int argc, const char * argv[]) {
     
     // Physical parameters
-    int L = 1.5; //length of muffin radius
-    
+    double Length = 38.1; //length of muffin radius in mm
+    int TotalTime = 100; //duration of time in minutes
     
     // Numerical parameters
-    int dt; //change in time
-    int dx; //change in x
+    double DeltaT = 0.45; //change in time
+    double DeltaX = 1; //change in x
+    int rows = (TotalTime/DeltaT) + 1;
+    int cols = (Length/DeltaX) + 1;
+    
+    // Create grid
+    double Temperature[rows][cols];
+    // Initialize boundary conditions of grid
+    // Left boundary
+    // Bottom boundary
     
     
     
-    //printf("Hello, World!\n");
+    printf("Rows = %d\nCols = %d\n", rows, cols);
     
-    //free
+    //free(rows)
     
     return 0;
 }
