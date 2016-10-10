@@ -21,13 +21,28 @@ int main(int argc, const char * argv[]) {
     int rows = (TotalTime/DeltaT) + 1;
     int cols = (Length/DeltaX) + 1;
     
+    // Counter variables
+    int i;
+    int j;
+    
     // Create grid
-    double Temperature[rows][cols];
+    double TemperatureGrid[rows][cols];
     // Initialize boundary conditions of grid
+    
     // Left boundary
-    // Bottom boundary
+    
+    // Right boundary
+    
+    // Top boundary
     
     
+    // Calculation
+    for(i = 2; i <= rows; i++){
+        for(j = 2; j < cols; j++){
+    TemperatureGrid[i,j] <- TemperatureGrid[i-1, j] + DeltaT*((TemperatureGrid[i-1, j-1] - 2*TemperatureGrid[i-1,j] +
+         TemperatureGrid[i-1, j+1])/DeltaX*DeltaX)
+        }
+    }
     
     printf("Rows = %d\nCols = %d\n", rows, cols);
     
