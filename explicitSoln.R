@@ -6,6 +6,8 @@
 
 # Collaborators: Xiukun Hu, Geeta Monpara 
 
+library(animation)
+
 #------------------------------------------------------------------------------
 
 # Define duration of temperature recordings in minutes:
@@ -16,33 +18,32 @@ x <- 38.1
 dt <- .45
 # Define delta x:
 dx <- 1
-# Define initial external boundary temperature.
-initExt <- 156
 
 # Initialize first row with initial boundary conditions. 
 # Find increments of x.
 Xincrements <- seq(0, x, dx)
-# Create even sequence from left to right boundary with the appropriate length.
-row1 <- seq(col1[1], initExt, length.out = length(Xincrements))
 
-# Initialize first column with initial boundary conditions. 
+# Initialize first column (left boundary) with initial boundary conditions. 
 # Find increments of L. 
 Lincrements <- seq(0, L, dt)
 # Use the exponential function found by Geeta to populate field with correct 
 # boundary temperature. 
-col1 <- 81.09*exp(-.09*Lincrements) + 92.93*exp(-.00217*Lincrements)
+firstCol <- 81.09*exp(-.09*Lincrements) + 92.93*exp(-.00217*Lincrements)
 
-# Initialize last column with initial boundary conditions. 
+# Initialize last column (right boundary) with initial boundary conditions. 
 # Use the exponential function found by Geeta to populate field with correct 
 # boundary temperature. 
 lastCol <- 80.35*exp(-.1156*Lincrements) + 93.69*exp(-.002442*Lincrements)
+
+# Create even sequence from left to right boundary with the appropriate length.
+row1 <- seq(firstCol[1], lastCol[1], length.out = length(Xincrements))
 
 # Create a datatable with zeros.
 TemperatureGrid <- matrix(0, nrow = length(Lincrements), 
                           ncol = length(Xincrements))
 # Update matrix to include initial boundary conditions
 TemperatureGrid[1, ] <- row1
-TemperatureGrid[, 1] <- col1
+TemperatureGrid[, 1] <- firstCol
 TemperatureGrid[, length(Xincrements)] <- lastCol
 
 # Update values of grid using the explicit solution.
@@ -53,6 +54,11 @@ for (i in 2:(dim(TemperatureGrid)[1])){
         TemperatureGrid[i-1, j+1])/dx^2)
   }
 }
-  
+
+# Check code again. Likely error.   
+plot(Xincrements, TemperatureGrid[1,], type = 'l')
+plot(Xincrements, TemperatureGrid[5,], type = 'l')
+plot(Xincrements, TemperatureGrid[100,])
+plot(Xincrements, TemperatureGrid[223,])
 
 
