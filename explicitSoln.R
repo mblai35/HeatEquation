@@ -55,6 +55,8 @@ for (i in 2:(dim(TemperatureGrid)[1])){
   }
 }
 
+write.csv(TemperatureGrid, file = "ExplicitSolnGrid.csv")
+
 # Check code again. Likely error.   
 plot(Xincrements, TemperatureGrid[1,], type = 'l')
 plot(Xincrements, TemperatureGrid[5,], type = 'l')
