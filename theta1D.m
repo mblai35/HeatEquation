@@ -3,7 +3,7 @@ clear; close all; clc;
 % Initial settings
 len   = 3 ; % inches
 T     = 70; % minutes
-alpha = 10*1e-6 * (39.37)^2 * 60; % inch^2/min (Thermal Diffusivity)
+alpha = 1 %10*1e-6 * (39.37)^2 * 60; % inch^2/min (Thermal Diffusivity)
 
 
 % Boundary Model Function: f(t) = a1 * exp(a2*x) + a3 * exp(a4*x)
@@ -22,9 +22,9 @@ IniMod  = @(x) (BndMod(0)-CntMod(0))*4/(len^2)*(x-len/2).^2+CntMod(0);
 
            
 % Initializing
-theta = 1; 
 
-dx = .1; dt = .1;
+dx = .2; dt = .01;
+theta = 1/2-(dx)^2/(12*dt); 
 
 % Check stability
 mu = dt/(dx^2)*alpha;
@@ -68,7 +68,7 @@ for it = 2 : numel(t)
     plot(x,Unew);
     axis([0,3,77,180]);
     drawnow;
-    pause(.1);
+    pause(.01);
     U=Unew;
 end
 

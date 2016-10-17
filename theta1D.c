@@ -64,6 +64,28 @@ int main( int argc, char *argv[] ) {
     int	    ix;                 /* loop index */
 
 
+    /* Check for arguments */
+    if ( argc != 1 ) {
+	if ( argc != 6 && argc != 11 ) {
+	    perror("Wrong number of arguments.");
+	    return 1;
+	}
+	i = 1;
+	while ( argc != i ) {
+	    if ( argv[i][0] == 'c' ) 
+		for ( i++ ; i < 6 ; i++ )
+		    sscanf(argv[i], "%lf", &par_cnt[i]);
+	    else if ( argv[i][0] == 'b' ) 
+		for ( i++ ; i < 6 ; i++ ) 
+		    sscanf(argv[i], "%lf", &par_bnd[i]);
+	    else {
+		perror("Illegal argunent 1 or 5, must be 'c' or 'b'\n");
+		return 2;
+	    }
+	}
+    }
+
+
     /* Input dx, dt and theta and ensure stability */
     while (1) {
 
@@ -93,23 +115,28 @@ int main( int argc, char *argv[] ) {
 
 	/* Input theta and make sure 0 <= theta <= 1 */
 	while (1){
-	    printf("Please input theta: ");
+	    printf("Please input theta (type '-1' to make theta 0.5-∆x^2/(12∆t)): ");
 	    scanf("%lf", &theta);
 	    if ( 0 <= theta && theta <= 1 ) {
 		printf("\ntheta = %lf\n", theta);
 		break;
 	    }
-	    else printf("\ntheta must be in [0,1]!\n");
+	    else if ( theta == -1 ) {
+		theta = .5 - dx * dx / (12.0 * dt);
+		printf("\ntheta = %lf\n", theta);
+		break;
+	    }
+	    else printf("\ntheta must be in [0,1] or -1!\n");
 	}
 
 	/* Test stability */
 	mu = dt / pow(dx,2) * ALPHA;
 	k  = mu * (1 - theta);
-	if ( k > .5 ) printf("\nNot stable.\n\n");
+	if ( k > .5 || theta < 0 ) printf("\nNot stable or theta < 0.\n\n");
 	else break;
     }
 
-    
+
     /* Initialize parameters */
     bnd0 = BoundaryModel(0);
     cnt0 = CenterModel(0);
