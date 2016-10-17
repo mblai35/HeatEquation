@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #define	    L	    3.0         /* Length of muffin	3	inches */
 #define	    T	    70.0        /* Total time		70     minutes */
@@ -72,14 +73,14 @@ int main( int argc, char *argv[] ) {
 	}
 	i = 1;
 	while ( argc != i ) {
-	    if ( argv[i][0] == 'c' ) 
+	    if ( strcmp(argv[i], "c") ) 
 		for ( i++ ; i < 6 ; i++ )
 		    sscanf(argv[i], "%lf", &par_cnt[i]);
-	    else if ( argv[i][0] == 'b' ) 
+	    else if ( strcmp(argv[i], "b") ) 
 		for ( i++ ; i < 6 ; i++ ) 
 		    sscanf(argv[i], "%lf", &par_bnd[i]);
 	    else {
-		perror("Illegal argunent 1 or 5, must be 'c' or 'b'\n");
+		printf("Illegal argunent %d, must be 'c' or 'b'\n", i);
 		return 2;
 	    }
 	}
@@ -192,10 +193,10 @@ int main( int argc, char *argv[] ) {
 
 
     /* Print initial condition to Theta1D.txt */
-    fprintf(fp, "Time	  ");
+    fprintf(fp, "Time	   ");
     for ( ix = 0 ; ix < nx ; ix++ ) 
 	fprintf(fp, "| x = %4.2f ", x[ix]);
-    fprintf(fp, "\n%-5.2f(min)", t[0]);
+    fprintf(fp, "\n%-6.3f(min)", t[0]);
     for ( ix = 0 ; ix < nx ; ix++ ) 
 	fprintf(fp, "|%9.5f ", u[ix]);
     fprintf(fp, "\n");
@@ -203,7 +204,7 @@ int main( int argc, char *argv[] ) {
 
     /* Solve for u using Thomas Algorithm */
     for ( it = 1 ; it < nt ; it++ ) {
-	fprintf(fp, "%-5.2f(min)", t[it]);
+	fprintf(fp, "%-6.3f(min)", t[it]);
 
 	/* Calculate e and f */
 	e[0] = 0;

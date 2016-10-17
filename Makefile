@@ -12,6 +12,9 @@
 # 	
 # 	make 			Compile theta1D.c.
 # 	make run [ARG=<Name>]	Compile and run with specific data.
+# 	make clean 		Delete all object file *.o
+# 	make distclean		Delete all object file *.o, output 
+# 				files, debug files and executables.
 # 	
 ####################################################################
 

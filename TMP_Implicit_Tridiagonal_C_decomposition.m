@@ -5,7 +5,7 @@ clc
 % (x - position) variable and column is reserved for a temporal (t - time) 
 % variable 
 t_f = 80;                % Time for last data collection
-dt = 0.1;                % time descretization
+dt = 1;                % time descretization
 dx = 0.1;                % space descretization
 t = 0:dt:t_f;            % time variable
 x = 0:dx:1.5;            % space intervals
@@ -14,7 +14,7 @@ J = round(1.5/dx);       % number of space-steps
 T(1:J+1,1:N+1) = 0;      % Initialiazing Temperature matrix
 
 %% Boundary conditions:
-T(1:J+1,1) =  %163.5;%174.03;        % at time = 0 min, temp is in F
+T(1:J+1,1) =  163.5;%174.03;        % at time = 0 min, temp is in F
 %Geeta's data:
 % T(1,1:N+1) = 81.09.*exp(-0.09036.*t)+92.93.*exp(-0.002168.*t);  % variation with time at x=0 in (Interior)
 % T(J+1,1:N+1) = 80.35.*exp(-0.1156.*t)+93.69.*exp(-0.002442.*t); % variation with time at x=1.5 in (Exterior)
