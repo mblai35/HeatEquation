@@ -36,11 +36,11 @@
 #endif
 
 #ifndef	    DT	
-    #define DT	.00005
+    #define DT	.05
 #endif
 
 #ifndef	    THETA
-    static const double THETA = .5 - DX * DX / (12.0 * DT);
+    static const double THETA = 1;
 #endif
 
 #if defined(MALLORY)
@@ -61,59 +61,63 @@
 double** d2malloc( const int nx, const int ny, const char* s );
 double BoundaryModel( const double t );
 double CenterModel  ( const double t );
-void   CalcPar	    ( const int nx, const double **u, const double mu, const double THETA, double **e, double **f );
-void   CalcU1	    ( const int nx, const double **e, const double **f, double *u1 );
+void   CalcPar ( const int nx, const int ny, const double *restrict *restrict u,
+		 const double kx, const double ky, const double ax, const double ay,
+		 const double bx, const double by,
+		 double *restrict *restrict e, double *restrict *restrict f, const char mode );
 
 
 int main( int argc, char *argv[] ) {
 
     /* Local Declaration */
 
+    double  t;                  /* time */
     double  *x;                 /* array of x    points */
     double  *y;                 /* array of y	 points */
-    double  *t;                 /* array of time points */
     double  **u;                /* matrix of temperature */
     double  **u1;               /* matrix of temp for next time step */
+    double  **temppb;           /* temporary 2D double pointer */
 
     double  **e, **f;		/* parameters for Thomas Algorithm */
 
     FILE    *fp;                /* file pointer for output */
-    int	    i,j;                  /* loop index */
+    int	    i,j;                /* loop index */
     int	    it;                 /* loop index */
     int	    ix,iy;              /* loop index */
 
 
     /* Check for arguments */
-    if ( argc != 1 ) {
-	if ( argc != 6 && argc != 11 ) {
-	    perror("Wrong number of arguments.");
-	    return 1;
-	}
-	i = 1;
-	while ( argc != i ) {
-	    if ( strcmp(argv[i], "c") ) 
-		for ( i++ ; i < 6 ; i++ )
-		    sscanf(argv[i], "%lf", &par_cnt[i]);
-	    else if ( strcmp(argv[i], "b") ) 
-		for ( i++ ; i < 6 ; i++ ) 
-		    sscanf(argv[i], "%lf", &par_bnd[i]);
-	    else {
-		printf("Illegal argunent %d, must be 'c' or 'b'\n", i);
-		return 2;
-	    }
-	}
+/*     if ( argc != 1 ) {
+ * 	if ( argc != 6 && argc != 11 ) {
+ * 	    perror("Wrong number of arguments.");
+ * 	    return 1;
+ * 	}
+ * 	i = 1;
+ * 	while ( argc != i ) {
+ * 	    if ( strcmp(argv[i], "c") ) 
+ * 		for ( i++ ; i < 6 ; i++ )
+ * 		    sscanf(argv[i], "%lf", &par_cnt[i]);
+ * 	    else if ( strcmp(argv[i], "b") ) 
+ * 		for ( i++ ; i < 6 ; i++ ) 
+ * 		    sscanf(argv[i], "%lf", &par_bnd[i]);
+ * 	    else {
+ * 		printf("Illegal argunent %d, must be 'c' or 'b'\n", i);
+ * 		return 2;
+ * 	    }
+ * 	}
+ *     }
+ */
+
+
+    /* Test stability */
+    const double mux = DT / pow(DX,2) * ALPHA;
+    const double kx  = mux * (1 - THETA);
+    const double muy = DT / pow(DY,2) * ALPHA;
+    const double ky  = muy * (1 - THETA);
+    if ( kx > .5 || ky > .5 || THETA < 0 ) {
+	printf("\nNot stable or THETA < 0.\n\n");   
+	return 1;
     }
-
-
-	/* Test stability */
-	const double mux = DT / pow(DX,2) * ALPHA;
-	const double kx  = mux * (1 - THETA);
-	const double muy = DT / pow(DY,2) * ALPHA;
-	const double ky  = muy * (1 - THETA);
-	if ( kx > .5 || ky > .5 || THETA < 0 ) {
-	    printf("\nNot stable or THETA < 0.\n\n");   
-	    return 1;
-	}
 
 
     /* Initialize parameters */
@@ -128,9 +132,6 @@ int main( int argc, char *argv[] ) {
     const int ny = H/DY + 1;
     const int nt = (T-t0)/DT + 1;
 
-    if ( (t = (double *) malloc( nt * sizeof(double) )) == NULL ) {
-	return -2;
-    }
 
     if ( (u = d2malloc(nx,ny,"u")) == NULL ) {
 	return -2;
@@ -148,10 +149,6 @@ int main( int argc, char *argv[] ) {
 	return -2;
     }
 
-    t[0] = t0;
-    for ( i = 1 ; i < nt ; i++ ) {
-	t[i] = t[0] + DT;
-    }
 
     for ( ix = 0 ; ix < nx ; ix++ ) 
 	for ( iy = 0 ; iy < ny ; iy++ ) 
@@ -169,7 +166,7 @@ int main( int argc, char *argv[] ) {
     fprintf(fp, "Time	   ");
     for ( ix = 0 ; ix < nx ; ix++ ) 
 	fprintf(fp, "| x = %4.2f ", ix*DX);
-    fprintf(fp, "\n%-6.3f(min)", t[0]);
+    fprintf(fp, "\n%-6.3f(min)", t0);
     for ( iy = 0 ; iy < ny ; iy++ ) { 
 	for ( ix = 0 ; ix < nx ; ix++ ) 
 	    fprintf(fp, "|%9.5f ", u[ix]);
@@ -179,31 +176,56 @@ int main( int argc, char *argv[] ) {
 
 
     /* Solve for u using Thomas Algorithm */
+    for ( iy = 0; iy < ny; iy++ )
+	    e[iy][0] = 0;
+    for ( ix = 1 ; ix < nx-1 ; ix++ ) 
+	    e[0][ix] = 0;
     for ( it = 1 ; it < nt ; it++ ) {
-	fprintf(fp, "%-6.3f(min)", t[it]);
+	fprintf(fp, "%-6.3f(min)", t0+DT*it);
 
 	/* Calculate e and f */
-	e[0] = 0;
-	f[0] = (u1[0] = (u1[nx-1] = BoundaryModel(t[it])));
-	CalcPar(nx, u, mu, THETA, e, f);
+	for ( iy = 0 ; iy < ny ; iy++ ) {
+	    f[iy][0] = (u1[iy][0] = (u1[iy][nx-1] = BoundaryModel(t0+DT*(it-.5))));
+	}
+	CalcPar(nx, ny, (const double **)u, kx, ky, ax, ay, bx, by, e, f, 'x');
 
-	/* Calculate u for t[it] */
-	for ( ix = nx-2 ; 0 < ix ; ix-- ) 
-	    u1[ix] = f[ix] + e[ix] * u1[ix+1];
+	/* Calculate u for t[it+1/2] */
+	for ( iy = 1 ; iy < ny-1 ; iy ++ ) 
+	    for ( ix = nx-2 ; 0 < ix ; ix-- ) 
+		u1[iy][ix] = f[iy][ix] + e[iy][ix] * u1[iy][ix+1];
+
+	/* Swap u and u1 */
+	temppb = u1;
+	u1 = u;
+	u = temppb;
+
+	for ( ix = 0 ; ix < nx ; ix++ ) 
+	    f[0][ix] = (u1[0][ix] = (u1[ny-1][ix] = BoundaryModel(t0+DT*it)));
+	CalcPar(nx, ny, (const double **)u, kx, ky, ax, ay, bx, by, e, f, 'y');
+
+	for ( iy = ny-2 ; 0 < iy ; iy-- ) 
+	    for ( ix = 0 ; ix < nx-1 ; ix++ ) 
+		u1[iy][ix] = f[iy][ix] + e[iy][ix] * u1[iy][ix-1];
 
 	/* Output result */
-	for ( ix = 0 ; ix < nx ; ix++ ) {
-	    fprintf(fp, "|%9.5f ", u1[ix]);
-	    u[ix] = u1[ix];
+	for ( iy = 0 ; iy < ny ; iy++ ) {
+	    for ( ix = 0 ; ix < nx ; ix++ ) {
+		fprintf(fp, "|%9.5f ", u1[iy][ix]);
+		u[ix] = u1[ix];
+	    }
+	    fprintf(fp,"\n");
 	}
 	fprintf(fp, "\n");
     }
 
     fclose(fp);
     free(x);
-    free(t);
     free(e);
     free(f);
+    for ( iy = 0 ; iy < ny ; iy++ ) {
+	free(u[iy]);
+	free(u1[iy]);
+    }
     free(u);
     free(u1);
     return 0;
@@ -220,19 +242,32 @@ double CenterModel ( const double t ) {
 }
 
 
-void   CalcPar ( const int nx, const double **u, const double mu, const double THETA, double **e, double **f, const char mode ) {
-    int i;
+void   CalcPar ( const int nx, const int ny, const double *restrict *restrict u,
+	const double kx, const double ky, const double ax, const double ay,
+	const double bx, const double by,
+	double *restrict *restrict e, double *restrict *restrict f, const char mode ) {
+    int ix, iy;
     double d;
-    for ( i = 1 ; i < nx-1 ; i++ ) {
-	d = u[i-1] * k + u[i] * (1 - 2*k) + u[i+1] * k;
-	e[i] = a / (b - a * e[i-1]);
-	f[i] = (d + a * f[i-1]) / (b - a * e[i-1]);
-    }
+    if ( mode == 'x' ) 
+	for ( iy = 1 ; iy < ny-1 ; iy++ ) {
+	    for ( ix = 1 ; ix < nx -1  ; ix++ ) {
+		d = u[iy-1][ix] * ky + u[iy][ix] * (1 - 2*ky) + u[iy+1][ix]*ky;
+		e[iy][ix] = ax / (bx - ax * e[iy][ix-1]);
+		f[iy][ix] = (d + ax * f[iy][ix-1]) / (bx - ax * e[iy][ix-1]);
+	    }
+	}
+    else if ( mode == 'y' ) 
+	for ( iy = 1 ; iy < ny-1 ; iy++ ) 
+	    for ( ix = 1 ; ix < nx-1 ; ix++ ) {
+		d = u[iy][ix-1] * kx + u[iy][ix] * (1 - 2*kx) + u[iy][ix+1]*kx;
+		e[iy][ix] = ay / (by - ay * e[iy-1][ix]);
+		f[iy][ix] = (d + ay * f[iy-1][ix]) / (by - ay * e[iy-1][ix]);
+	    }
 }
 
 
 double** d2malloc( const int nx, const int ny, const char* s ){
-    int	     i,j;
+    int	    i,j;
     double** pb;
     if ( (pb = (double**) malloc( ny * sizeof(double *) )) == NULL ) {
 	fprintf(stderr,"memory allocation for %s" ,s);
