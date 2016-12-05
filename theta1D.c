@@ -3,15 +3,17 @@
  *
  *       Filename:  theta1D.c
  *
- *    Description:  Heat Equation solver with theta method in 1D
+ *    Description:  Heat Equation solver for all theta in 1D. When theta equals zero,
+ *		    explicit solver will be used. Otherwise, Thomas algorithm is applied.
+ *		    The output will be a csv file named #theta1D.csv#.
  *
  *        Version:  1.0
  *        Created:  10/16/2016 14:38:29
- *       Revision:  none
+ *       Revision:  12/04/2016 17:36:50
  *       Compiler:  gcc
  *
- *         Author:  Xiukun Hu (xhu), xiukun.hu@outlook.com
- *   Organization:  University of Wyoming, Math Dept.
+ *         Author:  Xiukun Hu, Mallory Lai, Geeta Monpara
+ *   Organization:  University of Wyoming.
  *
  * =====================================================================================
  */
@@ -27,16 +29,25 @@
 #define	    ALPHA   1.0         /* Thermal diffusivity  1   inch^2/min */
 
 
-double par_cnt[4] = {85.6,  -.09233, 90.35, -.002332}; /* parameters for boundary model */
-double par_bnd[4] = {63.76,  -.2109, 96.21, -.003575}; /* parameters for central  model */
-double bnd0, cnt0;              /* Initial boundary value and center value */
-double a,b,k;                   /* Parameters for Thomas Algorithm */
+#if defined(MALLORY)
+    static const double par_cnt[4] = {90.49, -.06361, 80.13, -.001023};	/* parameters for boundary model */
+    static const double par_bnd[4] = {73.97, -.08249, 81.56, -.001303};	/* parameters for central  model */
+#elif defined(GEETA)
+    static const double par_cnt[4] = {81.09, -.09036, 92.93, -.002168};	/* parameters for boundary model */
+    static const double par_bnd[4] = {80.35, -.1156, 93.69, -.002442};	/* parameters for central  model */
+#else
+    static const double par_cnt[4] = {85.6,  -.09233, 90.35, -.002332}; /* parameters for boundary model */
+    static const double par_bnd[4] = {63.76,  -.2109, 96.21, -.003575}; /* parameters for central  model */
+#endif
+
 
 double BoundaryModel( const double t );
 double CenterModel  ( const double t );
-double InitialModel ( const double x );
-void   CalcPar	    ( const int nx, const double *u, const double mu, const double theta, double *e, double *f );
+double InitialModel ( const double x, const double bnd0, const double cnt0 );
+void   CalcPar	    ( const int nx, const double *u, const double mu, const double theta,
+       	double * const e, double * const f, const double a, const double b, const double k );
 void   CalcU1	    ( const int nx, const double *e, const double *f, double *u1 );
+int ExplicitSolution( const double dx, const double dt, const double bnd0, const double cnt0);
 
 
 int main( int argc, char *argv[] ) {
@@ -48,6 +59,9 @@ int main( int argc, char *argv[] ) {
     double  mu;                 /* µ = alpha * ∆t/(∆x^2) */
     double  theta;              /* theta for theta method */
 
+    double  bnd0, cnt0;         /* Initial boundary value and center value */
+    double  a,b,k;              /* Parameters for Thomas Algorithm */
+
     double  *x;                 /* array of space points */
     double  *t;                 /* array of time  points */
     double  *u;                 /* array of solution */
@@ -55,7 +69,7 @@ int main( int argc, char *argv[] ) {
 
     double  *e, *f;		/* parameters for Thomas Algorithm */
 
-    FILE    *fp;                 /* file pointer for output */
+    FILE    *fp;                /* file pointer for output */
 
     int	    nx;                 /* number of space points */
     int	    nt;                 /* number of time  points */
@@ -146,6 +160,12 @@ int main( int argc, char *argv[] ) {
     b = 2 * a + 1; 
 
 
+    /* If theta == 0, then use explicit solver */
+    if ( theta == 0 ) {
+	i = ExplicitSolution( dx, dt, bnd0, cnt0 );
+	return i;
+    }
+
     /* Initialize x, t and u array */
     nx = L/dx + 1;
     nt = T/dt + 1;
@@ -177,7 +197,7 @@ int main( int argc, char *argv[] ) {
 
     for ( i = 0 ; i < nx ; i++ ) {
 	x[i] = i * dx;
-	u[i] = InitialModel( x[i] );
+	u[i] = InitialModel( x[i], bnd0, cnt0 );
     }
 
     for ( i = 0 ; i < nt ; i++ ) {
@@ -186,30 +206,30 @@ int main( int argc, char *argv[] ) {
 
 
     /* Open file for output */
-    if ( (fp = fopen("Theta1D.txt","w+")) == NULL ) {
+    if ( (fp = fopen("Theta1D.csv","w+")) == NULL ) {
 	perror("Error opening file\n");
 	return -1;
     }
 
 
     /* Print initial condition to Theta1D.txt */
-    fprintf(fp, "Time	   ");
+    fprintf(fp, "Time (min) ");
     for ( ix = 0 ; ix < nx ; ix++ ) 
-	fprintf(fp, "| x = %4.2f ", x[ix]);
-    fprintf(fp, "\n%-6.3f(min)", t[0]);
+	fprintf(fp, ", x = %4.2f ", x[ix]);
+    fprintf(fp, "\n%-6.3f     ", t[0]);
     for ( ix = 0 ; ix < nx ; ix++ ) 
-	fprintf(fp, "|%9.5f ", u[ix]);
+	fprintf(fp, ",%9.5f ", u[ix]);
     fprintf(fp, "\n");
 
 
     /* Solve for u using Thomas Algorithm */
     for ( it = 1 ; it < nt ; it++ ) {
-	fprintf(fp, "%-6.3f(min)", t[it]);
+	fprintf(fp, "%-6.3f     ", t[it]);
 
 	/* Calculate e and f */
 	e[0] = 0;
 	f[0] = (u1[0] = (u1[nx-1] = BoundaryModel(t[it])));
-	CalcPar(nx, u, mu, theta, e, f);
+	CalcPar(nx, u, mu, theta, e, f, a, b, k);
 
 	/* Calculate u for t[it] */
 	for ( ix = nx-2 ; 0 < ix ; ix-- ) 
@@ -217,7 +237,7 @@ int main( int argc, char *argv[] ) {
 
 	/* Output result */
 	for ( ix = 0 ; ix < nx ; ix++ ) {
-	    fprintf(fp, "|%9.5f ", u1[ix]);
+	    fprintf(fp, ",%9.5f ", u1[ix]);
 	    u[ix] = u1[ix];
 	}
 	fprintf(fp, "\n");
@@ -244,12 +264,14 @@ double CenterModel ( const double t ) {
 }
 
 
-double InitialModel ( const double x ) {
+double InitialModel ( const double x, const double bnd0, const double cnt0 ) {
     return (bnd0 - cnt0) * 4.0 / (L*L) * (x - L/2.0) * (x - L/2.0) + cnt0;
 }
 
 
-void   CalcPar ( const int nx, const double *u, const double mu, const double theta, double *e, double *f ) {
+void   CalcPar ( const int nx, const double *u, const double mu, const double theta,
+
+       	double * const e, double * const f, const double a, const double b, const double k ) {
     int i;
     double d;
     for ( i = 1 ; i < nx-1 ; i++ ) {
@@ -257,4 +279,88 @@ void   CalcPar ( const int nx, const double *u, const double mu, const double th
 	e[i] = a / (b - a * e[i-1]);
 	f[i] = (d + a * f[i-1]) / (b - a * e[i-1]);
     }
+}
+
+int ExplicitSolution( const double dx, const double dt, const double bnd0, const double cnt0 ) {
+
+    // Numerical parameters
+    const int rows = (T/dt) + 1; //number of rows in grid
+    const int cols = (L/dx) + 1; //number of columns in grid
+
+    // Counter variables
+    int i;
+    int j;
+
+    // Create temperature grid with dimensions matching the number of columns and rows
+    double ** TemperatureGrid;
+    if ( (TemperatureGrid = (double **) malloc( rows * sizeof(double *) )) == NULL ) {
+	perror("memory allocation for TemperatureGrid");
+	return -1;
+    }
+
+     for ( i = 0 ; i < rows ; i++ ) {
+	 if ( (TemperatureGrid[i] = (double *) malloc( cols * sizeof(double ) )) == NULL ) {
+	     perror("memory allocation for TemperatureGrid");
+	     for ( j = i ; j >= 0 ; j-- ) 
+		 free(TemperatureGrid[j]);
+	     free(TemperatureGrid);
+	     return -1;
+	 }
+     }
+
+    // Find the appropriate row increments to plug into exponential function for boundary conditions.
+    double rowIncrements[rows];
+
+
+    // Row increments
+    for(i = 0; i < rows; i++){
+	rowIncrements[i] = i * dt;
+    }
+
+    // Initialize boundary conditions of grid
+    // Boundary; Populate first column of TemperatureGrid using exponential line of best fit.
+    for(i = 0; i < rows; i++){
+	TemperatureGrid[i][cols-1] = TemperatureGrid[i][0] = BoundaryModel(rowIncrements[i]);
+    }
+
+    // Top boundary; Linear interpolation of first row.
+    for(i = 1; i < cols; i++){
+	TemperatureGrid[0][i] = InitialModel(i*dx, bnd0, cnt0);
+    }
+
+
+    // Calculation; explicit solution.
+    for(i = 1; i < rows; i++){
+	for(j = 1; j < (cols - 1); j++){
+	    TemperatureGrid[i][j] = TemperatureGrid[i-1][j] + 
+		dt*((TemperatureGrid[i-1][j-1] - 2*TemperatureGrid[i-1][j] + TemperatureGrid[i-1][j+1])
+			/dx*dx);
+	}
+    }
+
+
+    // Write TemperatureGrid to csv file.
+    FILE * grid=fopen("theta1D.csv", "w+");
+
+    fprintf(grid, "Time (min) ");
+    for ( i = 0 ; i < cols ; i++ ) 
+	fprintf(grid, ", x = %4.2f ", i*dx);
+    fprintf(grid, "\n%-6.3f     ", rowIncrements[0]);
+    for ( i = 0 ; i < cols ; i++ ) 
+	fprintf(grid, ",%9.5f ", TemperatureGrid[0][i]);
+    fprintf(grid, "\n");
+    for(i = 1; i < rows; i++){
+	fprintf(grid, "%-6.3f     ",rowIncrements[i]);
+	for(j = 0; j < cols; j++){
+	    fprintf(grid, ",%9.5f ", TemperatureGrid[i][j]);
+	}
+	fprintf(grid, "\n");
+    }
+
+
+    free(TemperatureGrid);
+    fclose(grid);
+
+
+    return 0;
 }
