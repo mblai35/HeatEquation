@@ -143,10 +143,10 @@ void   CalcCoef_1D ( const int nx, const double *u, const double mu, const doubl
 }
 
 
-void   CalcCoef_2D ( const int nx, const int ny, const double *restrict *restrict u,
+void   CalcCoef_2D ( const int nx, const int ny, const double *__restrict__ *__restrict__ u,
 	const double kx, const double ky, const double ax, const double ay,
 	const double bx, const double by,
-	double *restrict *restrict e, double *restrict *restrict f, const char mode ) {
+	double *__restrict__ *__restrict__ e, double *__restrict__ *__restrict__ f, const char mode ) {
     int ix, iy;
     double d;
     if ( mode == 'x' ) 

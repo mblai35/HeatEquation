@@ -60,7 +60,7 @@ void GetPar_2D (double *dx, double *dy, double *dt, double *theta);
 double InitialModel ( const double x, const double bnd0, const double cnt0 );
 void   CalcCoef_1D ( const int nx, const double *u, const double mu, const double theta,
        	double * const e, double * const f, const double a, const double b, const double k );
-void   CalcCoef_2D ( const int nx, const int ny, const double *restrict *restrict u,
+void   CalcCoef_2D ( const int nx, const int ny, const double *__restrict__ *__restrict__ u,
 	const double kx, const double ky, const double ax, const double ay,
 	const double bx, const double by,
-	double *restrict *restrict e, double *restrict *restrict f, const char mode );
+	double *__restrict__ *__restrict__ e, double *__restrict__ *__restrict__ f, const char mode );
