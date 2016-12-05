@@ -18,7 +18,44 @@
 
 #include "HeatEquation.h"
 
-double BoundaryModel( const double t ) {
+char file_info_1D[] = { "theta1D.txt" };
+char file_info_2D[] = { "theta2D.txt" };
+
+
+int heat_info_write_1D ( int nx, double dx, int nt, double dt ) {
+    FILE * fp;
+    if ( (fp = fopen(file_info_1D,"w")) == NULL){
+	fprintf( stderr, "heat_info_write_1D: Could not open %s\n", file_info_1D );
+	return 1;
+    }
+
+    rewind( fp );
+    fprintf( fp, "%d %e\n", nx, dx );
+    fprintf( fp, "%d %e\n", nt, dt );
+
+    fclose( fp );
+    return 0;
+}
+
+
+int heat_info_write_2D ( int nx, double dx, int ny, double dy, int nt, double dt, double t0 ) {
+    FILE * fp;
+    if ( (fp = fopen(file_info_2D,"w")) == NULL){
+	fprintf( stderr, "heat_info_write_2D: Could not open %s\n", file_info_2D );
+	return 1;
+    }
+
+    rewind( fp );
+    fprintf( fp, "%d %e\n", nx, dx );
+    fprintf( fp, "%d %e\n", ny, dy );
+    fprintf( fp, "%d %e %e\n", nt, dt, t0 );
+
+    fclose( fp );
+    return 0;
+    
+}
+
+double BoundaryModel ( const double t ) {
     return par_bnd[0] * exp( par_bnd[1] * t ) + par_bnd[2] * exp( par_bnd[3] * t );
 }
 
@@ -34,7 +71,7 @@ void GetPar_1D (double *dx, double *dt, double *theta) {
 	    printf("Please input dx: ");
 	    scanf("%lf", dx);
 	    fflush(stdin);
-	    if ( remainder(L, *dx) < 1e-6 ) {
+	    if ( remainder(HEAT_L, *dx) < 1e-6 ) {
 		printf("dx = %lf\n", *dx);
 		break;
 	    }
@@ -46,7 +83,7 @@ void GetPar_1D (double *dx, double *dt, double *theta) {
 	    printf("Please input dt: ");
 	    scanf("%lf", dt);
 	    fflush(stdin);
-	    if ( remainder(T, *dt) < 1e-8 ) {
+	    if ( remainder(HEAT_T, *dt) < 1e-8 ) {
 		printf("dt = %lf\n", *dt);
 		break;
 	    }
@@ -77,7 +114,7 @@ void GetPar_2D (double *dx, double *dy, double *dt, double *theta) {
 	printf("Please input dy: ");
 	scanf("%lf", dy);
 	fflush(stdin);
-	if ( remainder(H, *dy) < 1e-6 ) {
+	if ( remainder(HEAT_H, *dy) < 1e-6 ) {
 	    printf("dy = %lf\n", *dy);
 	    break;
 	}
@@ -89,7 +126,8 @@ void GetPar_2D (double *dx, double *dy, double *dt, double *theta) {
 
 
 double InitialModel ( const double x, const double bnd0, const double cnt0 ) {
-    return (bnd0 - cnt0) * 4.0 / (L*L) * (x - L/2.0) * (x - L/2.0) + cnt0;
+    return (bnd0 - cnt0) * 4.0 / (HEAT_L*HEAT_L) 
+	* (x - HEAT_L/2.0) * (x - HEAT_L/2.0) + cnt0;
 }
 
 

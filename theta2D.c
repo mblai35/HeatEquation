@@ -56,9 +56,9 @@ int main( int argc, char *argv[] ) {
     GetPar_2D ( &dx, &dy, &dt, &theta);
 
     /* Test stability */
-    mux = dt / pow(dx,2) * ALPHA;
+    mux = dt / pow(dx,2) * HEAT_ALPHA;
     kx  = mux * (1 - theta);
-    muy = dt / pow(dy,2) * ALPHA;
+    muy = dt / pow(dy,2) * HEAT_ALPHA;
     ky  = muy * (1 - theta);
     if ( kx > .5 || ky > .5 || theta < 0 ) 
 	printf("\nNot stable or theta < 0.\n\n");   
@@ -75,9 +75,9 @@ int main( int argc, char *argv[] ) {
 
 
     /* Initialize x, t and u array */
-    nx = (double)L/dx + 1;
-    ny = (double)H/dy + 1;
-    nt = ((double)T-t0)/dt + 1;
+    nx = (double)HEAT_L/dx + 1;
+    ny = (double)HEAT_H/dy + 1;
+    nt = ((double)HEAT_T-t0)/dt + 1;
 
 
     if ( (u = d2malloc(nx,ny,"u")) == NULL ) {
@@ -102,42 +102,36 @@ int main( int argc, char *argv[] ) {
 	    u[iy][ix] = bnd0;
 
 
+    /* Write info */
+    heat_info_write_2D( nx, dx, ny, dy, nt, dt, t0 );
+
+
     /* Open file for output */
-    if ( (fp = fopen("Theta2D.csv","w+")) == NULL ) {
+    if ( (fp = fopen("theta2D.bin","w")) == NULL ) {
 	perror("Error opening file\n");
 	return -1;
     }
 
 
-    /* Print initial condition to Theta1D.txt */
-    fprintf(fp, "Time (min)");
-    for ( ix = 0 ; ix < nx ; ix++ ) 
-	fprintf(fp, ", x = %4.2f ", ix*dx);
-    fprintf(fp, "\n%-6.3f     ", t0);
-    for ( iy = 0 ; iy < ny ; iy++ ) { 
-	for ( ix = 0 ; ix < nx ; ix++ ) 
-	    fprintf(fp, ",%9.5f ", u[iy][ix]);
-	fprintf(fp, "\n");
-    }
-    fprintf(fp, "\n");
+    /* Print initial condition to Theta2D.bin */
+    fwrite( u, sizeof(double), nx*ny, fp );
 
 
-    /* Solve for u using Thomas Algorithm */
+    /* Initialize boundary of e */
     for ( iy = 0; iy < ny; iy++ )
 	    e[iy][0] = 0;
     for ( ix = 1 ; ix < nx-1 ; ix++ ) 
 	    e[0][ix] = 0;
     for ( it = 1 ; it < nt ; it++ ) {
-	fprintf(fp, "%-6.3f     ", t0+dt*it);
-
-	/* Calculate e and f */
+	/* Initialize boundary of f and u1 */
 	for ( iy = 0 ; iy < ny ; iy++ ) {
 	    f[iy][0] = (u1[iy][0] = (u1[iy][nx-1] = BoundaryModel(t0+dt*(it-.5))));
 	}
+	/* Calculate e and f for t[it+1/2] */
 	CalcCoef_2D(nx, ny, (const double **)u, kx, ky, ax, ay, bx, by, e, f, 'x');
 
-	/* Calculate u for t[it+1/2] */
-	for ( iy = 1 ; iy < ny-1 ; iy ++ ) 
+	/* Calculate u1 for t[it+1/2] */
+	for ( iy = 1 ; iy < ny-1 ; iy++ ) 
 	    for ( ix = nx-2 ; 0 < ix ; ix-- ) 
 		u1[iy][ix] = f[iy][ix] + e[iy][ix] * u1[iy][ix+1];
 
@@ -146,22 +140,27 @@ int main( int argc, char *argv[] ) {
 	u1 = u;
 	u = temppb;
 
+
+	/* Next half time step t[it+1] */
+
+	/* Initialize boundary of f and u1 */
 	for ( ix = 0 ; ix < nx ; ix++ ) 
 	    f[0][ix] = (u1[0][ix] = (u1[ny-1][ix] = BoundaryModel(t0+dt*it)));
+	/* Calculate e and f for t[it+1] */
 	CalcCoef_2D(nx, ny, (const double **)u, kx, ky, ax, ay, bx, by, e, f, 'y');
 
+	/* Calculate u1 for t[it+1] */
 	for ( iy = ny-2 ; 0 < iy ; iy-- ) 
-	    for ( ix = 0 ; ix < nx-1 ; ix++ ) 
+	    for ( ix = 1 ; ix < nx-1 ; ix++ ) 
 		u1[iy][ix] = f[iy][ix] + e[iy][ix] * u1[iy][ix-1];
 
+	/* Swap u and u1 */
+	temppb = u1;
+	u1 = u;
+	u = temppb;
+
 	/* Output result */
-	for ( iy = 0 ; iy < ny ; iy++ ) {
-	    for ( ix = 0 ; ix < nx ; ix++ ) {
-		fprintf(fp, ",%9.5f ", u1[iy][ix]);
-	    }
-	    fprintf(fp,"\n");
-	}
-	fprintf(fp, "\n");
+	fwrite( u, sizeof(double), nx*ny, fp );
     }
 
     fclose(fp);

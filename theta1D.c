@@ -60,7 +60,7 @@ int main( int argc, char *argv[] ) {
 	GetPar_1D ( &dx, &dt, &theta );
 
 	/* Test stability */
-	mu = dt / (dx*dx) * ALPHA;
+	mu = dt / (dx*dx) * HEAT_ALPHA;
 	k  = mu * (1 - theta);
 	if ( k > .5 || theta < 0 ) printf("\nNot stable or theta < 0.\n\n");
 	else break;
@@ -82,8 +82,8 @@ int main( int argc, char *argv[] ) {
     }
 
     /* Initialize x, t and u array */
-    nx = (double)L/dx + 1;
-    nt = (double)T/dt + 1;
+    nx = (double)HEAT_L/dx + 1;
+    nt = (double)HEAT_T/dt + 1;
 
     if ( (x = (double *) malloc( nx * sizeof(double) )) == NULL ) {
 	perror("memory allocation for x");
@@ -120,26 +120,24 @@ int main( int argc, char *argv[] ) {
     }
 
 
+    /* Write info */
+    heat_info_write_1D( nx, dx, nt, dt );
+
+
     /* Open file for output */
-    if ( (fp = fopen("Theta1D.csv","w+")) == NULL ) {
+    if ( (fp = fopen("theta1D.bin","w")) == NULL ) {
 	perror("Error opening file\n");
 	return -1;
     }
 
 
-    /* Print initial condition to Theta1D.txt */
-    fprintf(fp, "Time (min) ");
-    for ( ix = 0 ; ix < nx ; ix++ ) 
-	fprintf(fp, ", x = %4.2f ", x[ix]);
-    fprintf(fp, "\n%-6.3f     ", t[0]);
-    for ( ix = 0 ; ix < nx ; ix++ ) 
-	fprintf(fp, ",%9.5f ", u[ix]);
-    fprintf(fp, "\n");
+    /* Print initial condition to Theta1D.bin */
+    rewind( fp );
+    fwrite( u, sizeof(double), nx, fp );
 
 
     /* Solve for u using Thomas Algorithm */
     for ( it = 1 ; it < nt ; it++ ) {
-	fprintf(fp, "%-6.3f     ", t[it]);
 
 	/* Calculate e and f */
 	e[0] = 0;
@@ -150,12 +148,13 @@ int main( int argc, char *argv[] ) {
 	for ( ix = nx-2 ; 0 < ix ; ix-- ) 
 	    u1[ix] = f[ix] + e[ix] * u1[ix+1];
 
-	/* Output result */
-	for ( ix = 0 ; ix < nx ; ix++ ) {
-	    fprintf(fp, ",%9.5f ", u1[ix]);
+	/* u1 -> u */
+	for ( ix = 0 ; ix < nx ; ix++ ) 
 	    u[ix] = u1[ix];
-	}
-	fprintf(fp, "\n");
+
+	/* Write u */
+	fwrite( u, sizeof(double), nx, fp );
+	    
     }
 
     fclose(fp);
@@ -172,8 +171,8 @@ int main( int argc, char *argv[] ) {
 int ExplicitSolution( const double dx, const double dt, const double bnd0, const double cnt0 ) {
 
     // Numerical parameters
-    const int rows = ((double)T/dt) + 1; //number of rows in grid
-    const int cols = ((double)L/dx) + 1; //number of columns in grid
+    const int rows = ((double)HEAT_T/dt) + 1; //number of rows in grid
+    const int cols = ((double)HEAT_L/dx) + 1; //number of columns in grid
 
     // Counter variables
     int i;
@@ -228,22 +227,10 @@ int ExplicitSolution( const double dx, const double dt, const double bnd0, const
 
 
     // Write TemperatureGrid to csv file.
-    FILE * grid=fopen("theta1D.csv", "w+");
-
-    fprintf(grid, "Time (min) ");
-    for ( i = 0 ; i < cols ; i++ ) 
-	fprintf(grid, ", x = %4.2f ", i*dx);
-    fprintf(grid, "\n%-6.3f     ", rowIncrements[0]);
-    for ( i = 0 ; i < cols ; i++ ) 
-	fprintf(grid, ",%9.5f ", TemperatureGrid[0][i]);
-    fprintf(grid, "\n");
-    for(i = 1; i < rows; i++){
-	fprintf(grid, "%-6.3f     ",rowIncrements[i]);
-	for(j = 0; j < cols; j++){
-	    fprintf(grid, ",%9.5f ", TemperatureGrid[i][j]);
-	}
-	fprintf(grid, "\n");
-    }
+    heat_info_write_1D( cols, dx, rows, dt );
+    FILE * grid=fopen("theta1D.bin", "w");
+    for ( i = 0 ; i < rows ; i++ ) 
+	fwrite( TemperatureGrid[i], sizeof(double), cols, grid );
 
 
     free(TemperatureGrid);

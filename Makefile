@@ -63,7 +63,7 @@ clean:
 	- /bin/rm -f *.o $(TARGET1D) $(TARGET2D) $(TFILE) *.dSYM
 
 distclean: clean
-	- /bin/rm -f Theta1D.csv
+	- /bin/rm -f theta*.txt theta*.bin
 
 pack:
 	tar -zcvf $(TFILE) $(PACKFILES)

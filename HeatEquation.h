@@ -21,20 +21,20 @@
 #include <math.h>
 #include <string.h>
 
-#ifndef	    L
-#define	    L	    3.0         /* Length of muffin	3	inches */
+#ifndef	    HEAT_L
+#define	    HEAT_L	    3.0         /* Length of muffin	3	inches */
 #endif
 
-#ifndef	    H
-#define	    H	    .5          /* Height of muffin	.5	inches */
+#ifndef	    HEAT_H
+#define	    HEAT_H	    .5          /* Height of muffin	.5	inches */
 #endif
 
-#ifndef	    T
-#define	    T	    70.0        /* Total time		70     minutes */
+#ifndef	    HEAT_T
+#define	    HEAT_T	    70.0        /* Total time		70     minutes */
 #endif
 
-#ifndef	    ALPHA
-#define	    ALPHA   1.0         /* Thermal diffusivity  1   inch^2/min */
+#ifndef	    HEAT_ALPHA
+#define	    HEAT_ALPHA	    1.0         /* Thermal diffusivity  1   inch^2/min */
 #endif
 
 #if defined(MALLORY)
@@ -51,7 +51,9 @@
     static const double t0 = -1.97;
 #endif
 
-double BoundaryModel( const double t );
+int heat_info_write_1D ( int nx, double dx, int nt, double dt );
+int heat_info_write_2D ( int nx, double dx, int ny, double dy, int nt, double dt, double t0 );
+double BoundaryModel ( const double t );
 double CenterModel ( const double t );
 void GetPar_1D (double *dx, double *dt, double *theta);
 void GetPar_2D (double *dx, double *dy, double *dt, double *theta);
