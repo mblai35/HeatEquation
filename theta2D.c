@@ -1,13 +1,13 @@
 /*
  * =====================================================================================
  *
- *       Filename:  theta1D.c
+ *       Filename:  theta2D.c
  *
- *    Description:  Heat Equation solver with theta method in 1D
+ *    Description:  Heat Equation solver with theta method in 2D
  *
  *        Version:  1.0
  *        Created:  10/16/2016 14:38:29
- *       Revision:  none
+ *       Revision:  12/04/2016 19:26:41
  *       Compiler:  gcc
  *
  *         Author:  Xiukun Hu (xhu), xiukun.hu@outlook.com
@@ -16,64 +16,28 @@
  * =====================================================================================
  */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-
-#define	    L	    3.0         /* Length of muffin	3	inches */
-#define	    H	    .5          /* Height of muffin	.5	inches */
-#define	    T	    70.0        /* Total time		70     minutes */
-#define	    ALPHA   1.0         /* Thermal diffusivity  1   inch^2/min */
-
-#ifndef	    DX
-    #define DX	.01
-#endif
-
-#ifndef	    DY
-    #define DY	.01
-#endif
-
-#ifndef	    DT	
-    #define DT	.05
-#endif
-
-#ifndef	    THETA
-    static const double THETA = 1;
-#endif
-
-#if defined(MALLORY)
-    static const double par_cnt[4] = {90.49, -.06361, 80.13, -.001023};	/* parameters for boundary model */
-    static const double par_bnd[4] = {73.97, -.08249, 81.56, -.001303};	/* parameters for central  model */
-    static const double t0 = -10.25;
-#elif defined(GEETA)
-    static const double par_cnt[4] = {81.09, -.09036, 92.93, -.002168};	/* parameters for boundary model */
-    static const double par_bnd[4] = {80.35, -.1156, 93.69, -.002442};	/* parameters for central  model */
-    static const double t0 = 0;
-#else
-    static const double par_cnt[4] = {85.6,  -.09233, 90.35, -.002332}; /* parameters for boundary model */
-    static const double par_bnd[4] = {63.76,  -.2109, 96.21, -.003575}; /* parameters for central  model */
-    static const double t0 = -1.97;
-#endif
-
+#include "HeatEquation.h"
 
 double** d2malloc( const int nx, const int ny, const char* s );
-double BoundaryModel( const double t );
-double CenterModel  ( const double t );
-void   CalcPar ( const int nx, const int ny, const double *restrict *restrict u,
-		 const double kx, const double ky, const double ax, const double ay,
-		 const double bx, const double by,
-		 double *restrict *restrict e, double *restrict *restrict f, const char mode );
-
 
 int main( int argc, char *argv[] ) {
 
     /* Local Declaration */
+    double  dx;                 /* ∆x */
+    double  dy;                 /* ∆y */
+    double  dt;                 /* ∆t */
 
-    double  t;                  /* time */
-    double  *x;                 /* array of x    points */
-    double  *y;                 /* array of y	 points */
+    double  mux, muy;           /* µ and k */
+    double  theta;              /* theta for theta method */
+
+    double  bnd0;               /* Initial boundary value and center value */
+    double  ax, ay, bx, by,
+	    kx, ky;             /* Parameters for Thomas Algorithm */
+
     double  **u;                /* matrix of temperature */
     double  **u1;               /* matrix of temp for next time step */
     double  **temppb;           /* temporary 2D double pointer */
@@ -84,53 +48,36 @@ int main( int argc, char *argv[] ) {
     int	    i,j;                /* loop index */
     int	    it;                 /* loop index */
     int	    ix,iy;              /* loop index */
+    int	    nx,ny,nt;
 
 
-    /* Check for arguments */
-/*     if ( argc != 1 ) {
- * 	if ( argc != 6 && argc != 11 ) {
- * 	    perror("Wrong number of arguments.");
- * 	    return 1;
- * 	}
- * 	i = 1;
- * 	while ( argc != i ) {
- * 	    if ( strcmp(argv[i], "c") ) 
- * 		for ( i++ ; i < 6 ; i++ )
- * 		    sscanf(argv[i], "%lf", &par_cnt[i]);
- * 	    else if ( strcmp(argv[i], "b") ) 
- * 		for ( i++ ; i < 6 ; i++ ) 
- * 		    sscanf(argv[i], "%lf", &par_bnd[i]);
- * 	    else {
- * 		printf("Illegal argunent %d, must be 'c' or 'b'\n", i);
- * 		return 2;
- * 	    }
- * 	}
- *     }
- */
-
+    while(1) {
+    /* Get dx, dy, dt and theta */
+    GetPar_2D ( &dx, &dy, &dt, &theta);
 
     /* Test stability */
-    const double mux = DT / pow(DX,2) * ALPHA;
-    const double kx  = mux * (1 - THETA);
-    const double muy = DT / pow(DY,2) * ALPHA;
-    const double ky  = muy * (1 - THETA);
-    if ( kx > .5 || ky > .5 || THETA < 0 ) {
-	printf("\nNot stable or THETA < 0.\n\n");   
-	return 1;
+    mux = dt / pow(dx,2) * ALPHA;
+    kx  = mux * (1 - theta);
+    muy = dt / pow(dy,2) * ALPHA;
+    ky  = muy * (1 - theta);
+    if ( kx > .5 || ky > .5 || theta < 0 ) 
+	printf("\nNot stable or theta < 0.\n\n");   
+    else
+	break;
     }
 
 
     /* Initialize parameters */
-    const double bnd0 = BoundaryModel(t0);
+    bnd0 = BoundaryModel(t0);
 
-    const double ax = mux * THETA, ay = muy * THETA;
-    const double bx = 2 * ax + 1,  by = 2 * ay + 1; 
+    ax = mux * theta, ay = muy * theta;
+    bx = 2 * ax + 1,  by = 2 * ay + 1; 
 
 
     /* Initialize x, t and u array */
-    const int nx = L/DX + 1;
-    const int ny = H/DY + 1;
-    const int nt = (T-t0)/DT + 1;
+    nx = (double)L/dx + 1;
+    ny = (double)H/dy + 1;
+    nt = ((double)T-t0)/dt + 1;
 
 
     if ( (u = d2malloc(nx,ny,"u")) == NULL ) {
@@ -152,24 +99,24 @@ int main( int argc, char *argv[] ) {
 
     for ( ix = 0 ; ix < nx ; ix++ ) 
 	for ( iy = 0 ; iy < ny ; iy++ ) 
-	    u[ix][iy] = bnd0;
+	    u[iy][ix] = bnd0;
 
 
     /* Open file for output */
-    if ( (fp = fopen("Theta2D.txt","w+")) == NULL ) {
+    if ( (fp = fopen("Theta2D.csv","w+")) == NULL ) {
 	perror("Error opening file\n");
 	return -1;
     }
 
 
     /* Print initial condition to Theta1D.txt */
-    fprintf(fp, "Time	   ");
+    fprintf(fp, "Time (min)");
     for ( ix = 0 ; ix < nx ; ix++ ) 
-	fprintf(fp, "| x = %4.2f ", ix*DX);
-    fprintf(fp, "\n%-6.3f(min)", t0);
+	fprintf(fp, ", x = %4.2f ", ix*dx);
+    fprintf(fp, "\n%-6.3f     ", t0);
     for ( iy = 0 ; iy < ny ; iy++ ) { 
 	for ( ix = 0 ; ix < nx ; ix++ ) 
-	    fprintf(fp, "|%9.5f ", u[ix]);
+	    fprintf(fp, ",%9.5f ", u[iy][ix]);
 	fprintf(fp, "\n");
     }
     fprintf(fp, "\n");
@@ -181,13 +128,13 @@ int main( int argc, char *argv[] ) {
     for ( ix = 1 ; ix < nx-1 ; ix++ ) 
 	    e[0][ix] = 0;
     for ( it = 1 ; it < nt ; it++ ) {
-	fprintf(fp, "%-6.3f(min)", t0+DT*it);
+	fprintf(fp, "%-6.3f     ", t0+dt*it);
 
 	/* Calculate e and f */
 	for ( iy = 0 ; iy < ny ; iy++ ) {
-	    f[iy][0] = (u1[iy][0] = (u1[iy][nx-1] = BoundaryModel(t0+DT*(it-.5))));
+	    f[iy][0] = (u1[iy][0] = (u1[iy][nx-1] = BoundaryModel(t0+dt*(it-.5))));
 	}
-	CalcPar(nx, ny, (const double **)u, kx, ky, ax, ay, bx, by, e, f, 'x');
+	CalcCoef_2D(nx, ny, (const double **)u, kx, ky, ax, ay, bx, by, e, f, 'x');
 
 	/* Calculate u for t[it+1/2] */
 	for ( iy = 1 ; iy < ny-1 ; iy ++ ) 
@@ -200,8 +147,8 @@ int main( int argc, char *argv[] ) {
 	u = temppb;
 
 	for ( ix = 0 ; ix < nx ; ix++ ) 
-	    f[0][ix] = (u1[0][ix] = (u1[ny-1][ix] = BoundaryModel(t0+DT*it)));
-	CalcPar(nx, ny, (const double **)u, kx, ky, ax, ay, bx, by, e, f, 'y');
+	    f[0][ix] = (u1[0][ix] = (u1[ny-1][ix] = BoundaryModel(t0+dt*it)));
+	CalcCoef_2D(nx, ny, (const double **)u, kx, ky, ax, ay, bx, by, e, f, 'y');
 
 	for ( iy = ny-2 ; 0 < iy ; iy-- ) 
 	    for ( ix = 0 ; ix < nx-1 ; ix++ ) 
@@ -210,8 +157,7 @@ int main( int argc, char *argv[] ) {
 	/* Output result */
 	for ( iy = 0 ; iy < ny ; iy++ ) {
 	    for ( ix = 0 ; ix < nx ; ix++ ) {
-		fprintf(fp, "|%9.5f ", u1[iy][ix]);
-		u[ix] = u1[ix];
+		fprintf(fp, ",%9.5f ", u1[iy][ix]);
 	    }
 	    fprintf(fp,"\n");
 	}
@@ -219,7 +165,6 @@ int main( int argc, char *argv[] ) {
     }
 
     fclose(fp);
-    free(x);
     free(e);
     free(f);
     for ( iy = 0 ; iy < ny ; iy++ ) {
@@ -229,40 +174,6 @@ int main( int argc, char *argv[] ) {
     free(u);
     free(u1);
     return 0;
-}
-
-
-double BoundaryModel( const double t ) {
-    return par_bnd[0] * exp( par_bnd[1] * t ) + par_bnd[2] * exp( par_bnd[3] * t );
-}
-
-
-double CenterModel ( const double t ) {
-    return par_cnt[0] * exp( par_cnt[1] * t ) + par_cnt[2] * exp( par_cnt[3] * t );
-}
-
-
-void   CalcPar ( const int nx, const int ny, const double *restrict *restrict u,
-	const double kx, const double ky, const double ax, const double ay,
-	const double bx, const double by,
-	double *restrict *restrict e, double *restrict *restrict f, const char mode ) {
-    int ix, iy;
-    double d;
-    if ( mode == 'x' ) 
-	for ( iy = 1 ; iy < ny-1 ; iy++ ) {
-	    for ( ix = 1 ; ix < nx -1  ; ix++ ) {
-		d = u[iy-1][ix] * ky + u[iy][ix] * (1 - 2*ky) + u[iy+1][ix]*ky;
-		e[iy][ix] = ax / (bx - ax * e[iy][ix-1]);
-		f[iy][ix] = (d + ax * f[iy][ix-1]) / (bx - ax * e[iy][ix-1]);
-	    }
-	}
-    else if ( mode == 'y' ) 
-	for ( iy = 1 ; iy < ny-1 ; iy++ ) 
-	    for ( ix = 1 ; ix < nx-1 ; ix++ ) {
-		d = u[iy][ix-1] * kx + u[iy][ix] * (1 - 2*kx) + u[iy][ix+1]*kx;
-		e[iy][ix] = ay / (by - ay * e[iy-1][ix]);
-		f[iy][ix] = (d + ay * f[iy-1][ix]) / (by - ay * e[iy-1][ix]);
-	    }
 }
 
 

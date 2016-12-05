@@ -18,30 +18,52 @@
 # 	
 ####################################################################
 
+PROJECT = CM2hw2
+
+TFILE 	= $(PROJECT).tgz
+PACKFILES = $(TARGET1D).c $(TARGET2D).c HeatEquation.c HeatEquation.h Makefile
+
 CC 	= gcc
 LFLAGS 	= -g -O3 -lm
 
-TARGET	= theta1D
+TARGET1D	= theta1D
+TARGET2D	= theta2D
 
-Geeta 	=c 81.09 -.09036 92.93 -.002168 b 80.35 -.1156 93.69 -.002442
-Mallory =c 90.49 -.06361 80.13 -.001023 b 73.97 -.08249 81.56 -.001303
-Xiukun  =
+DATA 	= XIUKUN
+LENGTH  = 3.0
+HEIGHT  = .5
+TIME 	= 70.0
+ALPHA 	= 1.0
 
-ARG 	=Xiukun
+MACRO	= -D L=$(LENGTH) -D H=$(HEIGHT) -D T=$(TIME) -D ALPHA=$(ALPHA) -D $(DATA) 
 
-all:		$(TARGET)
+all:		$(TARGET1D) $(TARGET2D)
 
-run:		all
-	./$(TARGET) $($(ARG))
+1D:		$(TARGET1D)
+	./$(TARGET1D)
 
-$(TARGET): 	$(TARGET).o Makefile
-	$(CC) $(LFLAGS) -o $(TARGET) $(TARGET).o
+2D:		$(TARGET2D)
+	./$(TARGET2D)
 
+run:		1D 2D
+
+$(TARGET1D): 	$(TARGET1D).o HeatEquation.o Makefile
+	$(CC) $(LFLAGS) -o $(TARGET1D) $(TARGET1D).o HeatEquation.o
+
+$(TARGET2D):	$(TARGET2D).o HeatEquation.o Makefile
+	$(CC) $(LFLAGS) -o $(TARGET2D) $(TARGET2D).o HeatEquation.o
+
+HeatEquation.o:	HeatEquation.c Makefile
+	$(CC) $(LFLAGS) $(MACRO) -c -o HeatEquation.o HeatEquation.c
+	
 %.o:	%.c Makefile
-	$(CC) $(LFLAGS) -c -o $@ $<
+	$(CC) $(LFLAGS) $(MACRO) -c -o $@ $<
 
 clean:
-	- /bin/rm -f *.o
+	- /bin/rm -f *.o $(TARGET1D) $(TARGET2D) $(TFILE) *.dSYM
 
-distclean:
-	- /bin/rm -rf *.o Theta1D.txt *.dSYM $(TARGET)
+distclean: clean
+	- /bin/rm -f Theta1D.csv
+
+pack:
+	tar -zcvf $(TFILE) $(PACKFILES)

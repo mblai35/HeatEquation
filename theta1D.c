@@ -19,34 +19,8 @@
  */
 
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
+#include "HeatEquation.h"
 
-#define	    L	    3.0         /* Length of muffin	3	inches */
-#define	    T	    70.0        /* Total time		70     minutes */
-#define	    ALPHA   1.0         /* Thermal diffusivity  1   inch^2/min */
-
-
-#if defined(MALLORY)
-    static const double par_cnt[4] = {90.49, -.06361, 80.13, -.001023};	/* parameters for boundary model */
-    static const double par_bnd[4] = {73.97, -.08249, 81.56, -.001303};	/* parameters for central  model */
-#elif defined(GEETA)
-    static const double par_cnt[4] = {81.09, -.09036, 92.93, -.002168};	/* parameters for boundary model */
-    static const double par_bnd[4] = {80.35, -.1156, 93.69, -.002442};	/* parameters for central  model */
-#else
-    static const double par_cnt[4] = {85.6,  -.09233, 90.35, -.002332}; /* parameters for boundary model */
-    static const double par_bnd[4] = {63.76,  -.2109, 96.21, -.003575}; /* parameters for central  model */
-#endif
-
-
-double BoundaryModel( const double t );
-double CenterModel  ( const double t );
-double InitialModel ( const double x, const double bnd0, const double cnt0 );
-void   CalcPar	    ( const int nx, const double *u, const double mu, const double theta,
-       	double * const e, double * const f, const double a, const double b, const double k );
-void   CalcU1	    ( const int nx, const double *e, const double *f, double *u1 );
 int ExplicitSolution( const double dx, const double dt, const double bnd0, const double cnt0);
 
 
@@ -79,73 +53,14 @@ int main( int argc, char *argv[] ) {
     int	    ix;                 /* loop index */
 
 
-    /* Check for arguments */
-    if ( argc != 1 ) {
-	if ( argc != 6 && argc != 11 ) {
-	    perror("Wrong number of arguments.");
-	    return 1;
-	}
-	i = 1;
-	while ( argc != i ) {
-	    if ( strcmp(argv[i], "c") ) 
-		for ( i++ ; i < 6 ; i++ )
-		    sscanf(argv[i], "%lf", &par_cnt[i]);
-	    else if ( strcmp(argv[i], "b") ) 
-		for ( i++ ; i < 6 ; i++ ) 
-		    sscanf(argv[i], "%lf", &par_bnd[i]);
-	    else {
-		printf("Illegal argunent %d, must be 'c' or 'b'\n", i);
-		return 2;
-	    }
-	}
-    }
-
-
     /* Input dx, dt and theta and ensure stability */
     while (1) {
 
-	/* Input dx and make sure it can devide total length */
-	while (1) {
-	    printf("Please input dx: ");
-	    scanf("%lf", &dx);
-	    fflush(stdin);
-	    if ( remainder(L, dx) < 1e-6 ) {
-		printf("\ndx = %lf\n", dx);
-		break;
-	    }
-	    else printf("\nTotal length cannot be devided by dx!");
-	}
-
-	/* Input dt and make sure it can devide total time */
-	while (1) {
-	    printf("\nPlease input dt: ");
-	    scanf("%lf", &dt);
-	    fflush(stdin);
-	    if ( remainder(T, dt) < 1e-8 ) {
-		printf("\ndt = %lf\n", dt);
-		break;
-	    }
-	    else printf("\nTotal time cannot be devided by dt!\n");
-	}
-
-	/* Input theta and make sure 0 <= theta <= 1 */
-	while (1){
-	    printf("Please input theta (type '-1' to make theta 0.5-∆x^2/(12∆t)): ");
-	    scanf("%lf", &theta);
-	    if ( 0 <= theta && theta <= 1 ) {
-		printf("\ntheta = %lf\n", theta);
-		break;
-	    }
-	    else if ( theta == -1 ) {
-		theta = .5 - dx * dx / (12.0 * dt);
-		printf("\ntheta = %lf\n", theta);
-		break;
-	    }
-	    else printf("\ntheta must be in [0,1] or -1!\n");
-	}
+	/* Get dx, dt and theta */
+	GetPar_1D ( &dx, &dt, &theta );
 
 	/* Test stability */
-	mu = dt / pow(dx,2) * ALPHA;
+	mu = dt / (dx*dx) * ALPHA;
 	k  = mu * (1 - theta);
 	if ( k > .5 || theta < 0 ) printf("\nNot stable or theta < 0.\n\n");
 	else break;
@@ -167,8 +82,8 @@ int main( int argc, char *argv[] ) {
     }
 
     /* Initialize x, t and u array */
-    nx = L/dx + 1;
-    nt = T/dt + 1;
+    nx = (double)L/dx + 1;
+    nt = (double)T/dt + 1;
 
     if ( (x = (double *) malloc( nx * sizeof(double) )) == NULL ) {
 	perror("memory allocation for x");
@@ -229,7 +144,7 @@ int main( int argc, char *argv[] ) {
 	/* Calculate e and f */
 	e[0] = 0;
 	f[0] = (u1[0] = (u1[nx-1] = BoundaryModel(t[it])));
-	CalcPar(nx, u, mu, theta, e, f, a, b, k);
+	CalcCoef_1D(nx, u, mu, theta, e, f, a, b, k);
 
 	/* Calculate u for t[it] */
 	for ( ix = nx-2 ; 0 < ix ; ix-- ) 
@@ -254,38 +169,11 @@ int main( int argc, char *argv[] ) {
 }
 
 
-double BoundaryModel( const double t ) {
-    return par_bnd[0] * exp( par_bnd[1] * t ) + par_bnd[2] * exp( par_bnd[3] * t );
-}
-
-
-double CenterModel ( const double t ) {
-    return par_cnt[0] * exp( par_cnt[1] * t ) + par_cnt[2] * exp( par_cnt[3] * t );
-}
-
-
-double InitialModel ( const double x, const double bnd0, const double cnt0 ) {
-    return (bnd0 - cnt0) * 4.0 / (L*L) * (x - L/2.0) * (x - L/2.0) + cnt0;
-}
-
-
-void   CalcPar ( const int nx, const double *u, const double mu, const double theta,
-
-       	double * const e, double * const f, const double a, const double b, const double k ) {
-    int i;
-    double d;
-    for ( i = 1 ; i < nx-1 ; i++ ) {
-	d = u[i-1] * k + u[i] * (1 - 2*k) + u[i+1] * k;
-	e[i] = a / (b - a * e[i-1]);
-	f[i] = (d + a * f[i-1]) / (b - a * e[i-1]);
-    }
-}
-
 int ExplicitSolution( const double dx, const double dt, const double bnd0, const double cnt0 ) {
 
     // Numerical parameters
-    const int rows = (T/dt) + 1; //number of rows in grid
-    const int cols = (L/dx) + 1; //number of columns in grid
+    const int rows = ((double)T/dt) + 1; //number of rows in grid
+    const int cols = ((double)L/dx) + 1; //number of columns in grid
 
     // Counter variables
     int i;
