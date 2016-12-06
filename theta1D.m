@@ -3,7 +3,7 @@ clear; close all; clc;
 % Initial settings
 len   = 3 ; % inches
 T     = 70; % minutes
-alpha = 1 %10*1e-6 * (39.37)^2 * 60; % inch^2/min (Thermal Diffusivity)
+alpha = 1 %10*1e-6 * (39.37)^2 * 60; % inch/min (Thermal Diffusivity)
 
 
 % Boundary Model Function: f(t) = a1 * exp(a2*x) + a3 * exp(a4*x)

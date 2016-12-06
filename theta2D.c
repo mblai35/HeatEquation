@@ -22,6 +22,11 @@
 #include <string.h>
 #include "HeatEquation.h"
 
+#ifndef	    HEAT_ALPHA
+#define	    HEAT_ALPHA	    .007         /* Thermal diffusivity in inch^2/min */
+#endif
+
+
 double** d2malloc( const int nx, const int ny, const char* s );
 
 int main( int argc, char *argv[] ) {
@@ -49,7 +54,6 @@ int main( int argc, char *argv[] ) {
     int	    it;                 /* loop index */
     int	    ix,iy;              /* loop index */
     int	    nx,ny,nt;
-
 
     while(1) {
     /* Get dx, dy, dt and theta */
@@ -114,7 +118,9 @@ int main( int argc, char *argv[] ) {
 
 
     /* Print initial condition to Theta2D.bin */
-    fwrite( u, sizeof(double), nx*ny, fp );
+    rewind(fp);
+    for ( iy = 0 ; iy < ny ; iy++ ) 
+	fwrite( u[iy], sizeof(double), nx, fp );
 
 
     /* Initialize boundary of e */
@@ -135,32 +141,27 @@ int main( int argc, char *argv[] ) {
 	    for ( ix = nx-2 ; 0 < ix ; ix-- ) 
 		u1[iy][ix] = f[iy][ix] + e[iy][ix] * u1[iy][ix+1];
 
-	/* Swap u and u1 */
-	temppb = u1;
-	u1 = u;
-	u = temppb;
-
 
 	/* Next half time step t[it+1] */
 
 	/* Initialize boundary of f and u1 */
 	for ( ix = 0 ; ix < nx ; ix++ ) 
-	    f[0][ix] = (u1[0][ix] = (u1[ny-1][ix] = BoundaryModel(t0+dt*it)));
+	    f[0][ix] = (u[0][ix] = (u[ny-1][ix] = BoundaryModel(t0+dt*it)));
 	/* Calculate e and f for t[it+1] */
-	CalcCoef_2D(nx, ny, (const double **)u, kx, ky, ax, ay, bx, by, e, f, 'y');
+	CalcCoef_2D(nx, ny, (const double **)u1, kx, ky, ax, ay, bx, by, e, f, 'y');
 
 	/* Calculate u1 for t[it+1] */
 	for ( iy = ny-2 ; 0 < iy ; iy-- ) 
 	    for ( ix = 1 ; ix < nx-1 ; ix++ ) 
-		u1[iy][ix] = f[iy][ix] + e[iy][ix] * u1[iy][ix-1];
+		u[iy][ix] = f[iy][ix] + e[iy][ix] * u[iy+1][ix];
 
-	/* Swap u and u1 */
-	temppb = u1;
-	u1 = u;
-	u = temppb;
+	/* Add boundary value */
+	for ( iy = 0 ; iy < ny ; iy++ ) 
+	    u[iy][0] = (u[iy][nx-1] = BoundaryModel(t0+dt*it));
 
 	/* Output result */
-	fwrite( u, sizeof(double), nx*ny, fp );
+	for ( iy = 0 ; iy < ny ; iy++ ) 
+	    fwrite( u[iy], sizeof(double), nx, fp );
     }
 
     fclose(fp);

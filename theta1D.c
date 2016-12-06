@@ -20,6 +20,9 @@
 
 
 #include "HeatEquation.h"
+#ifndef	    HEAT_ALPHA
+#define	    HEAT_ALPHA	    .2	/* Thermal diffusivity in inch/min */
+#endif
 
 int ExplicitSolution( const double dx, const double dt, const double bnd0, const double cnt0);
 

@@ -33,10 +33,6 @@
 #define	    HEAT_T	    70.0        /* Total time		70     minutes */
 #endif
 
-#ifndef	    HEAT_ALPHA
-#define	    HEAT_ALPHA	    1.0         /* Thermal diffusivity  1   inch^2/min */
-#endif
-
 #if defined(MALLORY)
     static const double par_cnt[4] = {90.49, -.06361, 80.13, -.001023};	/* parameters for boundary model */
     static const double par_bnd[4] = {73.97, -.08249, 81.56, -.001303};	/* parameters for central  model */
