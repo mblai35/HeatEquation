@@ -1,6 +1,6 @@
 function Heat_Visualize( nD, timestep )
 
-mkmovie=1;
+mkmovie=0;
 
     
 CntData_Mallory = [171 126 104 93 84 79 77 75 75 73 73];
@@ -102,7 +102,7 @@ if mkmovie
 end
 
 
-for it = 1:ceil(timestep/dt):nt/8*3
+for it = 1:ceil(timestep/dt):nt
     if ny == 1
         figure(2);
         plot( x, Data(it,:) );
