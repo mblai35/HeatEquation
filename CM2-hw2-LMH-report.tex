@@ -42,7 +42,7 @@ Or you can compile it first by \code{make}, and then run the executable \code{./
 Some parameters can be changed using Makefile macros:
 \mybox{make -B LENGTH=3.0 HEIGHT=0.5 1D}
 
-Adjustable parameters during compile time includes:
+Adjustable parameters during compile time include:
 \begin{table}[h]
   \begin{tabular}{p{2cm} p{3.3cm} p{7cm}}
     \toprule
@@ -76,7 +76,7 @@ The text file contains information of the model, which is used in visualizing th
 The binary file contains output data in binary format.
 Please see Section 3 about how to visualize resulting data.
 
-Figure~\ref{fig:data-comp-1d} are the comparison between numerical central temperatures and central temperatures collected from homework 1.
+Figure~\ref{fig:data-comp-1d} illustrates the comparison between numerical central temperatures and central temperatures collected from homework 1.
 The settings for numerical solution are $dx=.1, dt=.01, \theta=-1$, and the thermal diffusivity $\alpha=.2$.
 
 \begin{figure}[H]
@@ -134,7 +134,7 @@ Or you can compile it first by \code{make}, and then run the executable \code{./
 Some parameters can be changed using Makefile macros:
 \mybox{make -B LENGTH=3.0 HEIGHT=0.5 2D}
 
-Adjustable parameters during compile time includes:
+Adjustable parameters during compile time include:
 \begin{table}[h]
   \begin{tabular}{p{2cm} p{3.3cm} p{7cm}}
     \toprule
@@ -156,18 +156,18 @@ If input is illegal, you need to input again.
 
 \subsection{Result}
 The boundary conditions are the same as in 1D (exponential interpolation).
-The initial conditions however are acquired using the assumption that
+The initial conditions however were acquired using the assumption that
 there is a time point when the temperature is the same everywhere in the muffin.
-This time point is calculated by exponentially interpolate center temperature
-and find the time when the center temperature equals the exterior temperature.
-That time is set to be $t_0$ and the initial condition is just constant.
+This time point was calculated by exponentially interpolating the center temperature
+and finding the time when the center temperature equals the exterior temperature.
+That time was set to be $t_0$ and the initial condition is just constant.
 
 The output includes two files: \texttt{theta2D.txt} and \texttt{theta2D.bin}.
 The text file contains information of the model, which is used in visualizing the data.
 The binary file contains output data in binary format.
 Please see Section 3 about how to visualize resulting data.
 
-Figure~\ref{fig:data-comp-2d} are the comparison between numerical central temperatures and central temperatures collected from homework 1.
+Figure~\ref{fig:data-comp-2d} shows the comparison between numerical central temperatures and central temperatures collected from homework 1.
 The settings for numerical solution are $dx=.01, dy=.01, dt=.01, \theta=1/2$, and the thermal diffusivity $\alpha=.007$.
 
 \begin{figure}[H]
@@ -219,8 +219,8 @@ $\theta=1$ is applied. And $nt=8000$ for all tests.
 In order to visualize the output, use the Matlab code \verb|Heat_Visualize.m|.
 There are two parameters for this Matlab code:\\
 \indent\code{nD}: default 1, legal values are 1 or 2.
-This parameter specify which data (1D or 2D) you want to visualize.\\
-\indent\code{timestep}: default 0.1, legal values are any positive number.
+This parameter specifies which data (1D or 2D) you want to visualize.\\
+\indent\code{timestep}: default 0.1, legal value is any positive number.
 This parameter determines the time step for the movie.
 \end{document}
 
