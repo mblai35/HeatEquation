@@ -21,7 +21,8 @@
 PROJECT = CM2hw2
 
 TFILE 	= $(PROJECT).tgz
-PACKFILES = $(TARGET1D).c $(TARGET2D).c HeatEquation.c HeatEquation.h Makefile
+PACKFILES = $(TARGET1D).c $(TARGET2D).c HeatEquation.c HeatEquation.h\
+ Heat_Visualize.m Makefile
 
 CC 	= gcc
 LFLAGS 	= -g -O3 -lm
@@ -32,9 +33,15 @@ TARGET2D	= theta2D
 DATA 	= XIUKUN
 LENGTH  = 3.0
 HEIGHT  = .5
-TIME 	= 70.0
 
-MACRO	= -D HEAT_L=$(LENGTH) -D HEAT_H=$(HEIGHT) -D HEAT_T=$(TIME) -D $(DATA) 
+ifdef ALPHA
+    MALPHA = -D HEAT_ALPHA=$(ALPHA)
+endif
+ifdef TIME
+    MTIME = -D HEAT_T=$(TIME)
+endif
+
+MACRO	= -D HEAT_L=$(LENGTH) -D HEAT_H=$(HEIGHT) $(MALPHA) $(MTIME) -D $(DATA) 
 
 all:		$(TARGET1D) $(TARGET2D)
 

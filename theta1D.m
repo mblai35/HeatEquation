@@ -7,8 +7,8 @@ alpha = 1 %10*1e-6 * (39.37)^2 * 60; % inch/min (Thermal Diffusivity)
 
 
 % Boundary Model Function: f(t) = a1 * exp(a2*x) + a3 * exp(a4*x)
-par_cnt = [85.6  -.09233 90.35 -.002332];   % Boundary model function parameters
-par_bnd = [63.76 -.2109  96.21 -.003575];   % Center   model function parameters
+par_cnt = [81.09, -.09036, 92.93, -.002168];   % Boundary model function parameters
+par_bnd = [80.35, -.1156, 93.69, -.002442];   % Center   model function parameters
 
 BndMod  = @(t) par_bnd(1) * exp( par_bnd(2) * t ) + ...
                par_bnd(3) * exp( par_bnd(4) * t );

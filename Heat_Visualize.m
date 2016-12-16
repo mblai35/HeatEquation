@@ -1,14 +1,11 @@
 function Heat_Visialize( nD, timestep )
-
-CntData=[176
-122
-100
-90
-84
-81
-79
-77];
-tData=0:10:70;
+    
+CntData_Mallory=[171 126 104 93 84 79 77 75 75 73 73];
+CntData_Geeta=[174.2 122.9 103.1 93.2 87.8 82.4 78.8];
+CntData_Xiukun=[176 122 100 90 84 81 79 77];
+tData_Mallory=0:10:100;
+tData_Geeta=[0 10 20 30 40 50 80];
+tData_Xiukun=0:10:70;
 
 switch(nargin)
     case 0
@@ -59,7 +56,25 @@ y = (0:ny-1) * dy;
 t = (0:nt-1) * dt + t0;
 [X,Y]=meshgrid(x,y);
 
+switch t(end)
+    case 70
+        CntData=CntData_Xiukun;
+        tData = tData_Xiukun;
+    case 80
+        CntData=CntData_Geeta;
+        tData = tData_Geeta;
+    case 100
+        CntData=CntData_Mallory;
+        tData = tData_Mallory;
+    otherwise
+        CntData=[];
+        tData = [];
+end
+
 [Data, nData] = fread( file_data, 'double' );
+
+minData = min(Data(:));
+maxData = max(Data(:));
 
 if nData ~= nx*ny*nt
     fprintf( 'Wrong number of data.\n' );
@@ -72,7 +87,7 @@ Cnt = Data( : , indxyData );
 figure(1)
 plot(t,Cnt,tData,CntData,'x');
     
-for it = 1:floor(timestep/dt):nt
+for it = 1:floor(timestep/dt):round(nt/3*2)
     if ny == 1
         figure(2);
         plot( x, Data(it,:) );
@@ -83,13 +98,12 @@ for it = 1:floor(timestep/dt):nt
         figure(2);
         iData = reshape(Data(it,:), nx, ny)';
         surf(X,Y,iData);
-        axis([0,3,0,.5,77,195]);
+        axis([x(1),x(end),y(1),y(end),minData,maxData]);
         caxis([77,195]);
         drawnow;
-        pause(timestep);
     end
 end
-
+close (VidObj);
 
 
 

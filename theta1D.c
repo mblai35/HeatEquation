@@ -223,8 +223,8 @@ int ExplicitSolution( const double dx, const double dt, const double bnd0, const
     for(i = 1; i < rows; i++){
 	for(j = 1; j < (cols - 1); j++){
 	    TemperatureGrid[i][j] = TemperatureGrid[i-1][j] + 
-		dt*((TemperatureGrid[i-1][j-1] - 2*TemperatureGrid[i-1][j] + TemperatureGrid[i-1][j+1])
-			/dx*dx);
+		HEAT_ALPHA*dt*((TemperatureGrid[i-1][j-1] - 2*TemperatureGrid[i-1][j] + TemperatureGrid[i-1][j+1])
+			/(dx*dx));
 	}
     }
 
