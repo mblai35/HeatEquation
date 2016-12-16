@@ -1,11 +1,14 @@
-function Heat_Visialize( nD, timestep )
+function Heat_Visualize( nD, timestep )
+
+mkmovie=0;
+
     
-CntData_Mallory=[171 126 104 93 84 79 77 75 75 73 73];
-CntData_Geeta=[174.2 122.9 103.1 93.2 87.8 82.4 78.8];
-CntData_Xiukun=[176 122 100 90 84 81 79 77];
-tData_Mallory=0:10:100;
-tData_Geeta=[0 10 20 30 40 50 80];
-tData_Xiukun=0:10:70;
+CntData_Mallory = [171 126 104 93 84 79 77 75 75 73 73];
+CntData_Geeta = [174.2 122.9 103.1 93.2 87.8 82.4 78.8];
+CntData_Xiukun = [176 122 100 90 84 81 79 77];
+tData_Mallory = 0:10:100;
+tData_Geeta = [0 10 20 30 40 50 80];
+tData_Xiukun = 0:10:70;
 
 switch(nargin)
     case 0
@@ -86,25 +89,48 @@ indxyData=nx * round((ny+1)/2) - round((nx-1)/2);
 Cnt = Data( : , indxyData );
 figure(1)
 plot(t,Cnt,tData,CntData,'x');
-    
-for it = 1:floor(timestep/dt):round(nt/3*2)
+xlabel('Time (min)');
+ylabel('Temperature (°F)');
+legend('Model','Real');
+   
+
+if mkmovie
+    vidobj = VideoWriter(['theta',num2str(nD),'D'],'MPEG-4');
+    vidobj.FrameRate = t(end)/timestep/10;
+    vidobj.Quality = 100;
+    open(vidobj);
+end
+
+
+for it = 1:ceil(timestep/dt):nt
     if ny == 1
         figure(2);
         plot( x, Data(it,:) );
-        axis([0,3,77,180]);
+        xlabel('x (inch)');
+        ylabel('Temperature (°F)');
+        title(['t=',num2str((it-1)*dt),' min']);
+        axis([0,3,72,180]);
         drawnow;
         pause(timestep);
     else
         figure(2);
         iData = reshape(Data(it,:), nx, ny)';
         surf(X,Y,iData);
+        xlabel('x (inch)'); ylabel('y (inch)'); zlabel('Temperature (°F)');
+        title(['t=',num2str((it-1)*dt),' min']);
         axis([x(1),x(end),y(1),y(end),minData,maxData]);
-        caxis([77,195]);
+        caxis([72,180]);
         drawnow;
     end
+    
+    if mkmovie
+        writeVideo(vidobj,getframe(gcf));
+    end
 end
-close (VidObj);
 
+if mkmovie
+    close(vidobj);
+end
 
 
 

@@ -1,0 +1,226 @@
+\documentclass[letterpaper,12pt,fleqn]{article}
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{framed}
+\usepackage{gfsartemisia-euler}
+\usepackage[T1]{fontenc}
+\usepackage[shortlabels]{enumitem}
+
+\setlength{\parskip}{1em}
+
+\definecolor{shadecolor}{gray}{.9}
+\newcommand{\mybox}[1]{\par\noindent\colorbox{shadecolor}
+{\parbox{\dimexpr\textwidth-2\fboxsep\relax}{\tt #1}}}
+\newcommand{\code}[1]{\colorbox{shadecolor}{\tt #1}}
+
+\newcommand\f{\frac}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%% Title %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+								%
+\centerline{\bf \huge MATH 5340 --- Comp Method II}		%
+\bigskip							%
+\centerline{\Large Homework \#2} 				%
+\medskip							%
+\centerline{\textsc{Xiukun Hu, Mallory Lai, Geeta Monpara}}	%
+\bigskip							%
+								%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Step 1: 1D}
+\subsection{Instructions}
+Basic command to run 1D code is:
+\mybox{make 1D}
+
+Or you can compile it first by \code{make}, and then run the executable \code{./theta1D}\;.
+
+Some parameters can be changed using Makefile macros:
+\mybox{make -B LENGTH=3.0 HEIGHT=0.5 1D}
+
+Adjustable parameters during compile time includes:
+\begin{table}[h]
+  \begin{tabular}{p{2cm} p{3.3cm} p{7cm}}
+    \toprule
+    \textbf{Name} & \textbf{Example} & \textbf{Description}\\
+    \midrule
+    Data    &	\code{DATA=XIUKUN}    &	  \textit{Decide whose initial and boundary conditions to be used.
+      Options include:
+  \texttt{XIUKUN, GEETA} and \texttt{MALLORY}}.\\
+    Length  &	\code{LENGTH=3.0}     &	  \textit{Domain length in inch.}\\
+    Time    &	\code{TIME=70}	      &	  \textit{Total time computed, in minute.}\\
+    Alpha   &	\code{ALPHA=.2}	      &	  \textit{Thermal Diffusivity in inch/min.}\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+$dx$ (inch), $dt$ (minute) and $\theta$ are required as input in runtime.
+If input is illegal, you need to input again.
+If $\theta$ is \code{-1}, then the special case
+$\theta=\f12 -\frac{(\Delta x)^2}{12\Delta t}$
+will be applied.
+
+\subsection{Result}
+The initial conditions are acquired using quadratic interpolation
+with central and exterior temperature data,
+assuming that both end have the same temperature.
+The boundary conditions are acquired using exponential regression with boundary data collected.
+
+
+The output includes two files: \texttt{theta1D.txt} and \texttt{theta1D.bin}.
+The text file contains information of the model, which is used in visualizing the data.
+The binary file contains output data in binary format.
+Please see Section 3 about how to visualize resulting data.
+
+Figure~\ref{fig:data-comp-1d} are the comparison between numerical central temperatures and central temperatures collected from homework 1.
+The settings for numerical solution are $dx=.1, dt=.01, \theta=-1$, and the thermal diffusivity $\alpha=.2$.
+
+\begin{figure}[H]
+  \begin{subfigure}[b]{\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{xiukun1D}
+    \subcaption{Xiukun's Data}
+  \end{subfigure}
+  \caption{Data Comparison}
+\end{figure}
+There is a video file named \texttt{theta1D.mp4} showing the cooling process in 1D with Mallory's initial condition and boundary condition.
+\begin{figure}[H]\ContinuedFloat
+  \begin{subfigure}[b]{\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{geeta1D}
+    \caption{Geeta's Data}
+  \end{subfigure}
+
+  \begin{subfigure}[b]{\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{mallory1D}
+    \caption{Mallory's Data}
+  \end{subfigure}
+  \caption{Data Comparison (cont.)}
+  \label{fig:data-comp-1d}
+\end{figure}
+
+
+\subsection{Performance}
+The following elapsed times are recorded using GNU \textit{time}. 
+The elapsed real time in second is presented.
+$\theta=1$ is applied. And $nt=70000$ for all tests.
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{l c c c c c c}
+    \toprule
+    \textbf{nx} & 300 & 600 & 1200 & 2400 & 4800 & 9600\\
+    \midrule
+    \textbf{real} & 0.80 & 1.43 & 2.68 & 5.32 & 10.57 & 21.19\\
+    \bottomrule
+  \end{tabular}
+  \caption{Elapsed time of 1D code}
+  \label{tab:time-1d}
+\end{table}
+
+
+\section{Step 2: 2D}
+\subsection{Instructions}
+Basic command to run 1D code is:
+\mybox{make 2D}
+
+Or you can compile it first by \code{make}, and then run the executable \code{./theta2D}\;.
+
+Some parameters can be changed using Makefile macros:
+\mybox{make -B LENGTH=3.0 HEIGHT=0.5 2D}
+
+Adjustable parameters during compile time includes:
+\begin{table}[h]
+  \begin{tabular}{p{2cm} p{3.3cm} p{7cm}}
+    \toprule
+    \textbf{Name} & \textbf{Example} & \textbf{Description}\\
+    \midrule
+    Data    &	\code{DATA=XIUKUN}    &	  \textit{Decide whose initial and boundary conditions to be used.
+      Options include:
+  \texttt{XIUKUN, GEETA} and \texttt{MALLORY}}.\\
+    Length  &	\code{LENGTH=3.0}     &	  \textit{Domain length in inch.}\\
+    Height  &	\code{HEIGHT=.5}      &	  \textit{Domain height in inch.}\\
+    Time    &	\code{TIME=70}	      &	  \textit{Total time computed, in minute.}\\
+    Alpha   &	\code{ALPHA=.2}	      &	  \textit{Thermal Diffusivity in inch/min.}\\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+$dy$ (inch), $dx$ (inch), $dt$ (minute) and $\theta$ are required as input in runtime.
+If input is illegal, you need to input again.
+
+\subsection{Result}
+The boundary conditions are the same as in 1D (exponential interpolation).
+The initial conditions however are acquired using the assumption that
+there is a time point when the temperature is the same everywhere in the muffin.
+This time point is calculated by exponentially interpolate center temperature
+and find the time when the center temperature equals the exterior temperature.
+That time is set to be $t_0$ and the initial condition is just constant.
+
+The output includes two files: \texttt{theta2D.txt} and \texttt{theta2D.bin}.
+The text file contains information of the model, which is used in visualizing the data.
+The binary file contains output data in binary format.
+Please see Section 3 about how to visualize resulting data.
+
+Figure~\ref{fig:data-comp-2d} are the comparison between numerical central temperatures and central temperatures collected from homework 1.
+The settings for numerical solution are $dx=.01, dy=.01, dt=.01, \theta=1/2$, and the thermal diffusivity $\alpha=.2$.
+
+\begin{figure}[H]
+  \begin{subfigure}[b]{\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{xiukun2D}
+    \subcaption{Xiukun's Data}
+  \end{subfigure}
+  \begin{subfigure}[b]{\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{mallory2D}
+    \caption{Mallory's Data}
+  \end{subfigure}
+  \caption{Data Comparison}
+\end{figure}
+
+\begin{figure}[H]\ContinuedFloat
+  \begin{subfigure}[b]{\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{geeta2D}
+    \caption{Geeta's Data}
+  \end{subfigure}
+  \caption{Data Comparison (cont.)}
+  \label{fig:data-comp-2d}
+\end{figure}
+
+There is a video file named \texttt{theta2D.mp4} showing the cooling process in 2D with Geeta's initial condition and boundary condition.
+
+
+\subsection{Performance}
+The following elapsed times are recorded using GNU \textit{time}. 
+The elapsed real time in second is presented.
+$\theta=1$ is applied. And $nt=8000$ for all tests.
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{l c c c c }
+    \toprule
+    \textbf{$nx\times ny$} & $150\times 25$ & $300\times 50$ & $600\times 100$ & $1200\times 200$\\
+    \midrule
+    \textbf{real} & 0.82 & 2.61 & 10.13 & 48.04\\
+    \bottomrule
+  \end{tabular}
+  \caption{Elapsed time of 2D code}
+  \label{tab:time-2d}
+\end{table}
+
+\section*{Visualization}
+In order to visualize the output, use the Matlab code \verb|Heat_Visualize.m|.
+There are two parameters for this Matlab code:\\
+\indent\code{nD}: default 1, legal values are 1 or 2.
+This parameter specify which data (1D or 2D) you want to visualize.\\
+\indent\code{timestep}: default 0.1, legal values are any positive number.
+This parameter determines the time step for the movie.
+\end{document}
+

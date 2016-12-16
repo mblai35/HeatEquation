@@ -111,6 +111,18 @@ void GetPar_1D (double *dx, double *dt, double *theta) {
 void GetPar_2D (double *dx, double *dy, double *dt, double *theta) {
     /* Input dx and make sure it can devide total length */
     while (1) {
+	printf("Please input dx: ");
+	scanf("%lf", dx);
+	fflush(stdin);
+	if ( remainder(HEAT_L, *dx) < 1e-6 ) {
+	    printf("dx = %lf\n", *dx);
+	    break;
+	}
+	else printf("Total length cannot be devided by dx!\n\n");
+    }
+
+    /* Input dy and make sure it can devide total length */
+    while (1) {
 	printf("Please input dy: ");
 	scanf("%lf", dy);
 	fflush(stdin);
@@ -120,7 +132,34 @@ void GetPar_2D (double *dx, double *dy, double *dt, double *theta) {
 	}
 	else printf("\nTotal height cannot be devided by dy!\n\n");
     }
-    GetPar_1D (dx, dt, theta);
+
+    /* Input dt and make sure it can devide total time */
+    while (1) {
+	printf("Please input dt: ");
+	scanf("%lf", dt);
+	fflush(stdin);
+	if ( remainder(HEAT_T, *dt) < 1e-8 ) {
+	    printf("dt = %lf\n", *dt);
+	    break;
+	}
+	else printf("Total time cannot be devided by dt!\n\n");
+    }
+
+    /* Input theta and make sure 0 <= theta <= 1 */
+    while (1){
+	printf("Please input theta: ");
+	scanf("%lf", theta);
+	if ( 0 <= *theta && *theta <= 1 ) {
+	    printf("theta = %lf\n", *theta);
+	    break;
+	}
+	else if ( *theta == -1 ) {
+	    *theta = .5 - *dx * *dx / (12.0 * *dt);
+	    printf("theta = %lf\n", *theta);
+	    break;
+	}
+	else printf("theta must be in [0,1]!\n\n");
+    }
 
 }
 

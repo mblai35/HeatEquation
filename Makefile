@@ -18,7 +18,7 @@
 # 	
 ####################################################################
 
-PROJECT = CM2hw2
+PROJECT = CM2-hw2-LMH
 
 TFILE 	= $(PROJECT).tgz
 PACKFILES = $(TARGET1D).c $(TARGET2D).c HeatEquation.c HeatEquation.h\
@@ -66,10 +66,10 @@ HeatEquation.o:	HeatEquation.c Makefile
 	$(CC) $(LFLAGS) $(MACRO) -c -o $@ $<
 
 clean:
-	- /bin/rm -f *.o $(TARGET1D) $(TARGET2D) $(TFILE) *.dSYM
+	- /bin/rm -rf *.o $(TARGET1D) $(TARGET2D) $(TFILE) *.dSYM
 
 distclean: clean
-	- /bin/rm -f theta*.txt theta*.bin
+	- /bin/rm -f theta*.txt theta*.bin $(TFILE)
 
 pack:
 	tar -zcvf $(TFILE) $(PACKFILES)
